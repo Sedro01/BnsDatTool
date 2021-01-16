@@ -21,6 +21,7 @@ namespace BnsDatTool.lib
         private int _indexCommons;
         private int _indexCommands;
 
+        public BDAT_CONTENT Content => _content;
 
         public BDat()
         {
