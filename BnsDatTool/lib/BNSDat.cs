@@ -212,6 +212,13 @@ namespace BnsDatTool
             int FileCount = is64 ? (int)br.ReadInt64() : br.ReadInt32();
             bool IsCompressed = br.ReadByte() == 1;
             bool IsEncrypted = br.ReadByte() == 1;
+
+            byte[] rsa_signature;
+            if (Version == 3)
+            {
+                rsa_signature = br.ReadBytes(128);
+            }
+
             byte[] Unknown_002 = br.ReadBytes(62);
             int FileTableSizePacked = is64 ? (int)br.ReadInt64() : br.ReadInt32();
             int FileTableSizeUnpacked = is64 ? (int)br.ReadInt64() : br.ReadInt32();
@@ -386,7 +393,7 @@ namespace BnsDatTool
             BinaryWriter bw = new BinaryWriter(output);
             byte[] Signature = new byte[8] { (byte)'U', (byte)'O', (byte)'S', (byte)'E', (byte)'D', (byte)'A', (byte)'L', (byte)'B' };
             bw.Write(Signature);
-            int Version = 2;
+            int Version = 3;
             bw.Write(Version);
             byte[] Unknown_001 = new byte[5] { 0, 0, 0, 0, 0 };
             bw.Write(Unknown_001);
@@ -407,6 +414,13 @@ namespace BnsDatTool
             bw.Write(IsCompressed);
             bool IsEncrypted = true;
             bw.Write(IsEncrypted);
+
+            if (Version == 3)
+            {
+                byte[] rsa_signature = new byte[128];
+                bw.Write(rsa_signature);
+            }
+
             byte[] Unknown_002 = new byte[62];
             bw.Write(Unknown_002);
 
