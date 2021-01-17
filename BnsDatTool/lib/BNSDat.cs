@@ -42,14 +42,8 @@ namespace BnsDatTool
     }
     public class BNSDat
     {
-
-
-        // public class BNSDat
-        // {
-
-        public string AES_KEY = "bns_obt_kr_2014#";
-
-        public byte[] XOR_KEY = new byte[16] { 164, 159, 216, 179, 246, 142, 57, 194, 45, 224, 97, 117, 92, 75, 26, 7 };
+        public static byte[] AES_KEY = new byte[] { 23, 81, 170, 213, 30, 54, 74, 27, 254, 96, 116, 231, 208, 133, 7, 104 };
+        public static byte[] XOR_KEY = new byte[] { 240, 200, 186, 170, 18, 31, 130, 159, 172, 24, 84, 33, 138, 58 };
 
         public string BytesToHex(byte[] bytes)
         {
@@ -83,7 +77,7 @@ namespace BnsDatTool
 
             Rijndael aes = Rijndael.Create();
             aes.Mode = CipherMode.ECB;
-            ICryptoTransform decrypt = aes.CreateDecryptor(Encoding.ASCII.GetBytes(AES_KEY), new byte[16]);
+            ICryptoTransform decrypt = aes.CreateDecryptor(AES_KEY, new byte[16]);
             decrypt.TransformBlock(tmp, 0, sizePadded, output, 0);
             tmp = output;
             output = new byte[size];
@@ -165,7 +159,7 @@ namespace BnsDatTool
             Rijndael aes = Rijndael.Create();
             aes.Mode = CipherMode.ECB;
 
-            ICryptoTransform encrypt = aes.CreateEncryptor(Encoding.ASCII.GetBytes(AES_KEY), new byte[16]);
+            ICryptoTransform encrypt = aes.CreateEncryptor(AES_KEY, new byte[16]);
             encrypt.TransformBlock(temp, 0, sizePadded, output, 0);
             temp = null;
             return output;
@@ -212,6 +206,13 @@ namespace BnsDatTool
             int FileCount = is64 ? (int)br.ReadInt64() : br.ReadInt32();
             bool IsCompressed = br.ReadByte() == 1;
             bool IsEncrypted = br.ReadByte() == 1;
+
+            byte[] rsa_signature;
+            if (Version == 3)
+            {
+                rsa_signature = br.ReadBytes(128);
+            }
+
             byte[] Unknown_002 = br.ReadBytes(62);
             int FileTableSizePacked = is64 ? (int)br.ReadInt64() : br.ReadInt32();
             int FileTableSizeUnpacked = is64 ? (int)br.ReadInt64() : br.ReadInt32();
@@ -386,7 +387,7 @@ namespace BnsDatTool
             BinaryWriter bw = new BinaryWriter(output);
             byte[] Signature = new byte[8] { (byte)'U', (byte)'O', (byte)'S', (byte)'E', (byte)'D', (byte)'A', (byte)'L', (byte)'B' };
             bw.Write(Signature);
-            int Version = 2;
+            int Version = 3;
             bw.Write(Version);
             byte[] Unknown_001 = new byte[5] { 0, 0, 0, 0, 0 };
             bw.Write(Unknown_001);
@@ -407,6 +408,13 @@ namespace BnsDatTool
             bw.Write(IsCompressed);
             bool IsEncrypted = true;
             bw.Write(IsEncrypted);
+
+            if (Version == 3)
+            {
+                byte[] rsa_signature = new byte[128];
+                bw.Write(rsa_signature);
+            }
+
             byte[] Unknown_002 = new byte[62];
             bw.Write(Unknown_002);
 
@@ -477,10 +485,47 @@ namespace BnsDatTool
 
         void Xor(byte[] buffer, int size)
         {
-            for (int i = 0; i < size; i++)
+            if (Version == 3)
             {
-                buffer[i] = (byte)(buffer[i] ^ XOR_KEY[i % XOR_KEY.Length]);
+                for (int i = 0; i < size; i++)
+                {
+                    buffer[i] = (byte)(buffer[i] ^ XOR_KEY[i % XOR_KEY.Length]);
+                }
             }
+            else if (Version == 4)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    for (int k = 0; k < size; k++)
+                    {
+                        buffer[k] = seedTransform((byte)(buffer[k] ^ seedTransform(XOR_KEY[k % XOR_KEY.Length])));
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception($"Unsupported version: {Version}");
+            }
+        }
+
+        static byte rol(byte original, int bits)
+        {
+            return (byte)((original << bits) | (original >> 8 - bits));
+        }
+
+        static byte seedTransform(byte c)
+        {
+            byte original = c;
+            original = rol(original, 4);
+            original = (byte)(original ^ c);
+            original = (byte)(original & 0x33);
+            original = (byte)(original ^ c);
+            original = rol(original, 1);
+            byte original2 = original;
+            original = (byte)(original & 0x55);
+            original2 = rol(original2, 2);
+            original2 = (byte)(original2 & 0xAA);
+            return (byte)(original2 | original);
         }
 
         bool Keep_XML_WhiteSpace = true;
