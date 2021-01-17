@@ -18,11 +18,25 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.0.2
 
-    - name: Build
-      run: msbuild BnsDatTool.sln /p:Configuration=Release
+    - name: Build Zip
+      run: |
+        msbuild BnsDatTool.sln /p:Configuration=Release
+        Compress-Archive -Path "./BnsDatTool/bin/Release/*" -DestinationPath release.zip 
 
-    - name: Zip
-      run: Compress-Archive -Path "./BnsDatTool/bin/Release/*" -DestinationPath release.zip 
+    - name: Build NuGet Package
+      # if: github.ref == 'refs/heads/master'
+      run: |
+        $version = '${{ github.run_number }}.0.0'
+        $authors = '${{ github.repository_owner }}'
+        $url = 'https://github.com/${{ github.repository }}.git'
+        msbuild -t:restore
+        msbuild -t:pack -p:Configuration=Release -p:PackageVersion=$version -p:Authors=$authors -p:RepositoryUrl=$url -p:RepositoryType=git
+      
+    - name: Publish NuGet Package
+      # if: github.ref == 'refs/heads/master'
+      run: dotnet nuget push ".\BnsDatTool\bin\Package\*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${Env:NUGET_API_KEY}"
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     - name: Release
       id: create_release
@@ -31,8 +45,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
         draft: false
         prerelease: false
 
