@@ -15,21 +15,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    # - name: Setup .NET
-    #   uses: actions/setup-dotnet@v1
-    #   with:
-    #     dotnet-version: 5.0.x
-    #     source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
-    #   env:
-    #     NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v1.0.2
 
-    # - name: Build Zip
-    #   run: |
-    #     msbuild BnsDatTool.sln /p:Configuration=Release
-    #     Compress-Archive -Path "./BnsDatTool/bin/Release/*" -DestinationPath release.zip 
+    - name: Build Zip
+      run: |
+        msbuild BnsDatTool.sln /p:Configuration=Release
+        Compress-Archive -Path "./BnsDatTool/bin/Release/*" -DestinationPath release.zip 
 
     - name: Build NuGet Package
       # if: github.ref == 'refs/heads/master'
@@ -42,12 +34,9 @@ jobs:
       
     - name: Publish NuGet Package
       # if: github.ref == 'refs/heads/master'
-      run: |
-        $url = 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
-        # dotnet nuget push ".\BnsDatTool\bin\Package\*.nupkg" --api-key ${GITHUB_TOKEN} --skip-duplicate --no-symbols true
-        dotnet nuget push ".\BnsDatTool\bin\Package\*.nupkg" --source "${url}" --api-key "${Env:GITHUB_TOKEN}" --skip-duplicate --no-symbols true
+      run: dotnet nuget push ".\BnsDatTool\bin\Package\*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${Env:NUGET_API_KEY}"
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     - name: Release
       id: create_release
