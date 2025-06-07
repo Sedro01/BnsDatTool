@@ -1036,8 +1036,12 @@ namespace BnsDatTool.lib
     public class BDAT_CONTENT
     {
         public byte[] Signature;
-        public int Version;
-        public byte[] Unknown;
+        public byte DatafileVersion;
+        public short ClientVersion1;
+        public short ClientVersion2;
+        public short ClientVersion3;
+        public short ClientVersion4;
+        public int FileDataSizePacked;
         public int ListCount;
         public BDAT_HEAD HeadList;
         public BDAT_LIST[] Lists;
@@ -1045,8 +1049,12 @@ namespace BnsDatTool.lib
         public void Read(BinaryReader br, BXML_TYPE iType)
         {
             Signature = br.ReadBytes(8);
-            Version = br.ReadInt32();
-            Unknown = br.ReadBytes(9);
+            DatafileVersion = br.ReadByte();
+            ClientVersion1 = br.ReadInt16();
+            ClientVersion2 = br.ReadInt16();
+            ClientVersion3 = br.ReadInt16();
+            ClientVersion4 = br.ReadInt16();
+            FileDataSizePacked = br.ReadInt32();
             ListCount = br.ReadInt32();
             HeadList = new BDAT_HEAD();
             HeadList.Complement = false;
@@ -1065,8 +1073,12 @@ namespace BnsDatTool.lib
         public void Read64(BinaryReader br, BXML_TYPE iType)
         {
             Signature = br.ReadBytes(8);
-            Version = br.ReadInt32();
-            Unknown = br.ReadBytes(13);
+            DatafileVersion = br.ReadByte();
+            ClientVersion1 = br.ReadInt16();
+            ClientVersion2 = br.ReadInt16();
+            ClientVersion3 = br.ReadInt16();
+            ClientVersion4 = br.ReadInt16();
+            FileDataSizePacked = (int)br.ReadInt64();
             ListCount = (int)br.ReadInt64();
             HeadList = new BDAT_HEAD();
             HeadList.Complement = false;
@@ -1085,8 +1097,12 @@ namespace BnsDatTool.lib
         public void Write(BinaryWriter bw, BXML_TYPE iType)
         {
             bw.Write(Signature);
-            bw.Write(Version);
-            bw.Write(Unknown);
+            bw.Write(DatafileVersion);
+            bw.Write(ClientVersion1);
+            bw.Write(ClientVersion2);
+            bw.Write(ClientVersion3);
+            bw.Write(ClientVersion4);
+            bw.Write(FileDataSizePacked);
             bw.Write(ListCount);
             HeadList.Write(bw, iType);
             for (int l = 0; l < ListCount; l++)
@@ -1097,8 +1113,12 @@ namespace BnsDatTool.lib
         public void Write64(BinaryWriter bw, BXML_TYPE iType)
         {
             bw.Write(Signature);
-            bw.Write(Version);
-            bw.Write(Unknown);
+            bw.Write(DatafileVersion);
+            bw.Write(ClientVersion1);
+            bw.Write(ClientVersion2);
+            bw.Write(ClientVersion3);
+            bw.Write(ClientVersion4);
+            bw.Write((long)FileDataSizePacked);
             bw.Write((long)ListCount);
             HeadList.Write64(bw, iType);
             for (int l = 0; l < ListCount; l++)
