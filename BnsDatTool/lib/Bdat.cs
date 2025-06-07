@@ -189,7 +189,6 @@ namespace BnsDatTool.lib
                         {
                             BDAT_SUBARCHIVE bClone1 = new BDAT_SUBARCHIVE()
                             {
-                                StartAndEndFieldId = new byte[16],
                                 Fields = new BDAT_FIELDTABLE[index],
                                 Lookups = new BDAT_LOOKUPTABLE[index],
                                 FieldLookupCount = index
@@ -199,16 +198,15 @@ namespace BnsDatTool.lib
                             Array.Copy(bsubarchive.Lookups, 0, bClone1.Lookups, 0, index);
 
                             // set new start field id
-                            Buffer.BlockCopy(BitConverter.GetBytes(bClone1.Fields[0].ID), 0, bClone1.StartAndEndFieldId, 0, 4);
+                            bClone1.StartId = bClone1.Fields[0].ID;
                             // set new end field id
-                            Buffer.BlockCopy(BitConverter.GetBytes(bClone1.Fields[index - 1].ID), 0, bClone1.StartAndEndFieldId, 8, 4);
+                            bClone1.EndId = bClone1.Fields[index - 1].ID;
                             subNews.Add(bClone1);
 
                             //part 2
                             index2 = bsubarchive.FieldLookupCount - index;
                             BDAT_SUBARCHIVE bClone2 = new BDAT_SUBARCHIVE()
                             {
-                                StartAndEndFieldId = new byte[16],
                                 Fields = new BDAT_FIELDTABLE[index2],
                                 Lookups = new BDAT_LOOKUPTABLE[index2],
                                 FieldLookupCount = index2
@@ -217,12 +215,12 @@ namespace BnsDatTool.lib
                             Array.Copy(bsubarchive.Lookups, index, bClone2.Lookups, 0, index2);
 
                             // set new start field id
-                            Buffer.BlockCopy(BitConverter.GetBytes(bClone2.Fields[0].ID), 0, bClone2.StartAndEndFieldId, 0, 4);
+                            bClone2.StartId = bClone2.Fields[0].ID;
                             // set new end field id
-                            Buffer.BlockCopy(BitConverter.GetBytes(bClone2.Fields[index2 - 1].ID), 0, bClone2.StartAndEndFieldId, 8, 4);
+                            bClone2.EndId = bClone2.Fields[index - 1].ID;
                             subNews.Add(bClone2);
 
-                            Console.WriteLine("A:{0}<>B:{1}.OK!", m_bnsDat.BytesToHex(bClone1.StartAndEndFieldId), m_bnsDat.BytesToHex(bClone2.StartAndEndFieldId));
+                            Console.WriteLine("A:{0}<>B:{1}.OK!", bClone1.StartId, bClone2.StartId);
 
                         }
                         else
@@ -432,7 +430,7 @@ namespace BnsDatTool.lib
                         for (int a = 0; a < barchive.SubArchiveCount; a++)
                         {
                             BDAT_SUBARCHIVE bsubarchive = barchive.SubArchives[a];
-                            outfile.WriteLine(string.Format("\t\t\t<subarchive count=\"{0}\" StartAndEndFieldId=\"{1}\">", bsubarchive.FieldLookupCount, m_bnsDat.BytesToHex(bsubarchive.StartAndEndFieldId)));
+                            outfile.WriteLine(string.Format("\t\t\t<subarchive count=\"{0}\" StartId=\"{1}\" EndId=\"{1}\">", bsubarchive.FieldLookupCount, bsubarchive.StartId, bsubarchive.EndId));
                             for (int f = 0; f < bsubarchive.FieldLookupCount; f++)
                             {
                                 BDAT_FIELDTABLE bfield = bsubarchive.Fields[f];
@@ -797,7 +795,8 @@ namespace BnsDatTool.lib
 
     public class BDAT_SUBARCHIVE
     {
-        public byte[] StartAndEndFieldId;                    // 16 byte (shorts?)
+        public long StartId;
+        public long EndId;
         public int SizeCompressed;            //short
         public int SizeDecompressed;          //short
         public int FieldLookupCount;          // 4 byte
@@ -807,7 +806,8 @@ namespace BnsDatTool.lib
 
         public void Read(BinaryReader br)
         {
-            StartAndEndFieldId = br.ReadBytes(16);
+            StartId = br.ReadInt64();
+            EndId = br.ReadInt64();
             SizeCompressed = br.ReadInt16();
             byte[] DataCompressed = br.ReadBytes(SizeCompressed);
             SizeDecompressed = br.ReadInt16();
@@ -879,7 +879,8 @@ namespace BnsDatTool.lib
             byte[] DataCompressed = m_bnsDat.Inflate(DataDecompressed, SizeDecompressed, out SizeCompressedNew, 6);
             SizeCompressed = SizeCompressedNew;
 
-            bw.Write(StartAndEndFieldId);
+            bw.Write(StartId);
+            bw.Write(EndId);
             bw.Write((short)SizeCompressed);
             bw.Write(DataCompressed);
             bw.Write((short)SizeDecompressed);
