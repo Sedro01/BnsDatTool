@@ -674,15 +674,14 @@ namespace BnsDatTool.lib
         public short Unknown2;
         public int Size;
         public byte[] Data;
-        public int ID;
+        public int ID => BitConverter.ToInt32(Data, 0);
 
         public void Read(BinaryReader br)
         {
             Unknown1 = br.ReadInt16();
             Unknown2 = br.ReadInt16();
             Size = br.ReadInt32();
-            ID = br.ReadInt32();
-            Data = Size >= 12 ? br.ReadBytes(Size - 12) : new byte[0];
+            Data = Size >= 8 ? br.ReadBytes(Size - 8) : new byte[0];
 
             //Console.WriteLine("Size: {0}, ID: {1}", Size, ID);
         }
@@ -692,7 +691,6 @@ namespace BnsDatTool.lib
             bw.Write(Unknown1);
             bw.Write(Unknown2);
             bw.Write(Size);
-            bw.Write(ID);
             bw.Write(Data);
         }
     }
