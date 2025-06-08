@@ -670,27 +670,27 @@ namespace BnsDatTool.lib
 
     public class BDAT_FIELDTABLE
     {
-        public int Unknown1; //short
-        public int Unknown2; //short
+        public short Unknown1;
+        public short Unknown2;
         public int Size;
         public byte[] Data;
         public int ID;
 
         public void Read(BinaryReader br)
         {
-            Unknown1 = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
-            Unknown2 = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
+            Unknown1 = br.ReadInt16();
+            Unknown2 = br.ReadInt16();
             Size = br.ReadInt32();
             ID = br.ReadInt32();
-            Data = br.ReadBytes(Size - 12);
+            Data = Size >= 12 ? br.ReadBytes(Size - 12) : new byte[0];
 
             //Console.WriteLine("Size: {0}, ID: {1}", Size, ID);
         }
 
         public void Write(BinaryWriter bw)
         {
-            bw.Write(Ultily.WriteIntTo2Bytes(Unknown1));
-            bw.Write(Ultily.WriteIntTo2Bytes(Unknown2));
+            bw.Write(Unknown1);
+            bw.Write(Unknown2);
             bw.Write(Size);
             bw.Write(ID);
             bw.Write(Data);
@@ -810,9 +810,9 @@ namespace BnsDatTool.lib
         public void Read(BinaryReader br)
         {
             StartAndEndFieldId = br.ReadBytes(16);
-            SizeCompressed = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
+            SizeCompressed = br.ReadInt16();
             byte[] DataCompressed = br.ReadBytes(SizeCompressed);
-            SizeDecompressed = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
+            SizeDecompressed = br.ReadInt16();
 
             if (SizeDecompressed < 0)
             {
@@ -828,7 +828,7 @@ namespace BnsDatTool.lib
             //Console.WriteLine("FieldLookupCount: " + FieldLookupCount);
 
             BinaryReader mis = new BinaryReader(new MemoryStream(DataDecompressed));
-            int DataOffset = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
+            int DataOffset = br.ReadInt16();
             for (int i = 1; i <= FieldLookupCount; i++)
             {
                 mis.BaseStream.Seek(DataOffset, SeekOrigin.Begin);
@@ -839,7 +839,7 @@ namespace BnsDatTool.lib
 
                 if (i < FieldLookupCount)
                 {
-                    DataOffset = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
+                    DataOffset = br.ReadInt16();
                 }
                 else
                 {
@@ -882,13 +882,13 @@ namespace BnsDatTool.lib
             SizeCompressed = SizeCompressedNew;
 
             bw.Write(StartAndEndFieldId);
-            bw.Write(Ultily.WriteIntTo2Bytes(SizeCompressed));
+            bw.Write((short)SizeCompressed);
             bw.Write(DataCompressed);
-            bw.Write(Ultily.WriteIntTo2Bytes(SizeDecompressed));
+            bw.Write((short)SizeDecompressed);
             bw.Write(FieldLookupCount);
             for (int i = 0; i < FieldLookupCount; i++)
             {
-                bw.Write(Ultily.WriteIntTo2Bytes(DataOffsets[i]));
+                bw.Write((short)DataOffsets[i]);
             }
         }
 
@@ -907,13 +907,13 @@ namespace BnsDatTool.lib
     public class BDAT_ARCHIVE
     {
         public int SubArchiveCount;           // 4 byte
-        public int Unknown; //short
+        public short Unknown;
         public BDAT_SUBARCHIVE[] SubArchives;       // *
 
         public void Read(BinaryReader br)
         {
             SubArchiveCount = br.ReadInt32();
-            Unknown = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
+            Unknown = br.ReadInt16();
             SubArchives = new BDAT_SUBARCHIVE[SubArchiveCount];
 
             //string DebugText = "";
@@ -932,7 +932,7 @@ namespace BnsDatTool.lib
         public void Write(BinaryWriter bw)
         {
             bw.Write(SubArchiveCount);
-            bw.Write(Ultily.WriteIntTo2Bytes(Unknown));
+            bw.Write(Unknown);
             for (int i = 0; i < SubArchiveCount; i++)
             {
                 SubArchives[i].Write(bw);
@@ -991,18 +991,18 @@ namespace BnsDatTool.lib
     public class BDAT_LIST
     {
         public byte Unknown1;
-        public int ID; //short
-        public int Unknown2; //short
-        public int Unknown3; //short
+        public short ID;
+        public short Unknown2;
+        public short Unknown3;
         public int Size;
         public BDAT_COLLECTION Collection;
 
         public void Read(BinaryReader br)
         {
             Unknown1 = br.ReadByte();
-            ID = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
-            Unknown2 = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
-            Unknown3 = Ultily.ReadIntFrom2Bytes(br.ReadBytes(2));
+            ID = br.ReadInt16();
+            Unknown2 = br.ReadInt16();
+            Unknown3 = br.ReadInt16();
             Size = br.ReadInt32();
 
             long offsetStart = br.BaseStream.Position;
@@ -1019,9 +1019,9 @@ namespace BnsDatTool.lib
         public void Write(BinaryWriter bw)
         {
             bw.Write(Unknown1);
-            bw.Write(Ultily.WriteIntTo2Bytes(ID));
-            bw.Write(Ultily.WriteIntTo2Bytes(Unknown2));
-            bw.Write(Ultily.WriteIntTo2Bytes(Unknown3));
+            bw.Write(ID);
+            bw.Write(Unknown2);
+            bw.Write(Unknown3);
             bw.Write(Size);
             long offsetStart = bw.BaseStream.Position;
             Collection.Write(bw);
@@ -1105,24 +1105,6 @@ namespace BnsDatTool.lib
             {
                 Lists[l].Write(bw);
             }
-        }
-    }
-
-    public static class Ultily
-    {
-        public static int ReadIntFrom2Bytes(byte[] bytes)
-        {
-            return bytes[0] | (bytes[1] << 8);
-        }
-
-        public static byte[] WriteIntTo2Bytes(int value)
-        {
-            byte[] data = new byte[2];
-
-            data[0] = (byte)(value & 0xFF);
-            data[1] = (byte)((value >> 8) & 0xFF);
-
-            return data;
         }
     }
 
