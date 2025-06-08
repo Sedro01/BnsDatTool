@@ -996,6 +996,7 @@ namespace BnsDatTool.lib
         public short Unknown3;
         public int Size;
         public BDAT_COLLECTION Collection;
+        public byte[] Padding;
 
         public void Read(BinaryReader br)
         {
@@ -1010,10 +1011,8 @@ namespace BnsDatTool.lib
             Collection.Read(br);
             long offsetEnd = br.BaseStream.Position;
 
-            if (offsetStart + Size != offsetEnd)
-            {
-                br.BaseStream.Seek(offsetStart + Size, SeekOrigin.Begin);
-            }
+            long paddingSize = offsetStart + Size - offsetEnd;
+            Padding = paddingSize > 0 ? br.ReadBytes((int)paddingSize) : new byte[0];
         }
 
         public void Write(BinaryWriter bw)
@@ -1025,6 +1024,7 @@ namespace BnsDatTool.lib
             bw.Write(Size);
             long offsetStart = bw.BaseStream.Position;
             Collection.Write(bw);
+            bw.Write(Padding);
             long offsetEnd = bw.BaseStream.Position;
             bw.Seek((int)offsetStart - 4, SeekOrigin.Begin);
             Size = (int)(offsetEnd - offsetStart);
